@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Task
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate,login,logout
+
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,3 +29,23 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
             user.save()
             return user
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+    def validate(self,data):
+        pass
+
+# class EmployeeSerializer(serializers.ModelSerializer):
+class EmployeeSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = User
+        # fields = "__all__"
+        fields = (
+            'username',
+            'password',
+            'first_name',
+            'last_name',
+            'email',
+            'url'
+        )

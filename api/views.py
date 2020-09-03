@@ -5,8 +5,8 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import TaskSerializer,UserSerializer,EmployeeSerializer,LoginSerializer
-from .models import Task
+from .serializers import TaskSerializer,UserSerializer,EmployeeSerializer,LoginSerializer,EmployeeSerializer1,ProfileSearialiser
+from .models import Task,Profile
 from django.contrib.auth.models import User
 from .forms import createuserform
 
@@ -20,6 +20,15 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 
 from rest_framework import generics,mixins
+
+from rest_framework.authentication import SessionAuthentication,BasicAuthentication,TokenAuthentication
+
+from rest_framework.permissions import IsAuthenticated,IsAdminUser
+
+from django.contrib.auth import login,logout
+
+from rest_framework.authtoken.models import Token
+#authentication 1.basic  2.section  3.token
 # Create your views here.
 
 @api_view(['GET','POST'])
@@ -44,6 +53,8 @@ class Task_list_view(generics.GenericAPIView,
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     lookup_field = 'id'
+    authentication_classes = [SessionAuthentication,BasicAuthentication,TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get(self,request,id=None):
         if id:
@@ -52,23 +63,23 @@ class Task_list_view(generics.GenericAPIView,
             return self.list(request)
 
     def perform_create(self, serializer):
-        # serializer.save(created_by=self.request.user)
-        serializer.save() 
+        serializer.save(created_by=self.request.user)
     def perform_update(self, serializer):
-        # serializer.save(created_by=self.request.user)
-        serializer.save()
-
+        serializer.save(created_by=self.request.user)
     def post(self,request):
         return self.create(request)
 
     def put(self,request,id=None):
-        return self.update(request,id)
+        check1 = str(self.request.user)
+        obj = Task.objects.filter(id=id)
+        for i in obj:
+            check2 = str(i.created_by)
+        if check1 == check2:
+            return self.update(request,id)
+        return JsonResponse({"result":"wrong user"})
 
     def delete(self,request,id=None):
         return self.destroy(request,id)
-
-
-
 
 
 
@@ -143,20 +154,56 @@ def RegisterUser(request):
             data = serializer.errors
     return Response(data)
 
-
 class LoginView(APIView):
     def post(self,request):
-        pass
-    
+        try:
+            serializer = LoginSerializer(data=request.data)
+            try:
+                if serializer.is_valid():
+                    try:
+                        user = serializer.validated_data['user']
+                        try:
+                            login(request,user)
+                            token,created = Token.objects.get_or_create(user=user)
+                            return Response({'token':token.key},status=200)
+                        except:
+                            return Response({'result':'wrong credientials'})
+                    except:
+                        return Response({'result':'wrong username of password '})
+                else:
+                    return Response({'result':serializer.errors})
+            except Exception as e:
+                return Response({'result':e})
+        except:
+            return Response({'result':serializer.errors})
 
 class LogoutView(APIView):
-    pass
+    authentication_classes = (TokenAuthentication,)
+    def post(self,request):
+        logout(request)
+        return Response(status=204)
 
 #by using class we can do create  delete put POST methon in single class(default option)
-#if u r using put u need to add /id/ in url  and even if u r using delete u should put /id/ in url
+#if u r using put u need to add /id/ in url  and even if u r using delete u should put /id/ in url 
+# get /id/ in url also work
+from rest_framework.decorators import action
+from rest_framework.parsers import FormParser,MultiPartParser,JSONParser
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset =  User.objects.all()
     serializer_class = EmployeeSerializer
+    parser_classes = (JSONParser,FormParser,MultiPartParser)
+
+    @action(detail=True,methods=['put'])
+    def profile(self,request,pk=None):
+        user = self.get_object()
+        profile = user.profile
+        searialiser = ProfileSearialiser(profile,data=request.data)
+
+        if searialiser.is_valid():
+            searialiser.save()
+            return Response(searialiser.data,status=200)
+        else:
+            return Response(searialiser.errors,status=400)
 
 class TaskSerializerViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()

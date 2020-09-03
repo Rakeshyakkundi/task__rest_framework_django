@@ -16,12 +16,11 @@ urlpatterns = [
     # path('auth/',obtain_auth_token),
 
     path('',include(router.urls)),
-
     path('task-class/',views.Task_class_view.as_view()),
     path('task-class/<int:pk>/',views.Task_class_detail.as_view()),
     path('task_list_view/',views.Task_list_view.as_view()),
     path('task_list_view/<int:id>/',views.Task_list_view.as_view()),
-    path('login/',LoginView.as_view()),
+    path('login/',views.LoginView.as_view()),
     path('logout/',LogoutView.as_view()),
     path('task-list/',views.taskList,name='task-list'),
     path('task-detail/<str:pk>/',views.taskDetail,name='task-detail'),

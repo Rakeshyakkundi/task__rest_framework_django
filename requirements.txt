@@ -18,7 +18,6 @@ colorlover==0.3.0
 cryptography==2.8
 cufflinks==0.17.3
 cycler==0.10.0
-dbus-python==1.2.16
 decorator==4.4.2
 defusedxml==0.6.0
 distlib==0.3.1

@@ -67,16 +67,23 @@ class Task_list_view(generics.GenericAPIView,
     def perform_update(self, serializer):
         serializer.save(created_by=self.request.user)
     def post(self,request):
-        return self.create(request)
+        try:
+            return self.create(request)
+        except Exception as e:
+            return JsonResponse({'error':e})
 
     def put(self,request,id=None):
         check1 = str(self.request.user)
         obj = Task.objects.filter(id=id)
-        for i in obj:
-            check2 = str(i.created_by)
-        if check1 == check2:
-            return self.update(request,id)
-        return JsonResponse({"result":"wrong user"})
+        try:
+            for i in obj:
+                check2 = str(i.created_by)
+            if check1 == check2:
+                print(check1,check2)
+                return self.update(request,id)
+            return JsonResponse({"result":"wrong user"})
+        except Exception as e:
+            return JsonResponse({'error':e})
 
     def delete(self,request,id=None):
         return self.destroy(request,id)
